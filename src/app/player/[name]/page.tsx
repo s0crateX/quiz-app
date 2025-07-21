@@ -112,11 +112,13 @@ const PlayerPage = () => {
     // Create and preload the audio
     timerAudioRef.current = new Audio('/assets/sounds/timer.mp3');
     
-    // Preload the audio file
+    // Preload the audio file and optimize for immediate playback
     if (timerAudioRef.current) {
       timerAudioRef.current.load();
       // Set volume to 80%
       timerAudioRef.current.volume = 0.8;
+      // Preload the audio to reduce playback delay
+      timerAudioRef.current.preload = 'auto';
     }
     
     return () => {
@@ -133,9 +135,12 @@ const PlayerPage = () => {
       const interval = setInterval(() => {
         setTimeLeft(prev => {
           const newTime = Math.max(0, prev - 1);
-          // Play timer sound when exactly 5 seconds remaining to alert the user
-          // This works in conjunction with the visual yellow indicator
-          if (newTime === 5 && timerAudioRef.current) {
+          // Play timer sound at 4 seconds to ensure it's heard when the timer shows 4 seconds
+          // This works in conjunction with the visual yellow indicator which also starts at 4 seconds
+          // This adjustment accounts for any playback delay and ensures audio-visual synchronization
+          if (newTime === 4 && timerAudioRef.current) {
+            // Reset audio to beginning and play immediately
+            timerAudioRef.current.currentTime = 0;
             timerAudioRef.current.play()
               .catch(err => console.error('Error playing timer sound:', err));
           }
@@ -162,7 +167,9 @@ const PlayerPage = () => {
 
   const progressPercentage = totalTime > 0 ? ((totalTime - timeLeft) / totalTime) * 100 : 0;
   const isTimeUp = timeLeft === 0 && question && !answer;
-  const isTimeCritical = timeLeft <= 5 && timeLeft > 0 && question;
+  // Time is considered critical at 4 seconds or less, matching the audio cue timing
+  // This ensures visual and audio alerts are perfectly synchronized
+  const isTimeCritical = timeLeft <= 4 && timeLeft > 0 && question;
 
   // Decode the name parameter
   const decodedName = decodeURIComponent(name || '');
@@ -185,20 +192,20 @@ const PlayerPage = () => {
           <div className="space-y-6">
             {/* Timer and Status */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <Card className={`${isTimeUp ? 'bg-red-50 border-red-200' : isTimeCritical ? 'bg-yellow-50 border-yellow-200' : 'bg-blue-50 border-blue-200'}`}>
+              <Card className={`${isTimeUp ? 'bg-red-50 border-red-200' : isTimeCritical ? 'bg-yellow-50 border-yellow-200 transition-colors duration-300' : 'bg-blue-50 border-blue-200'}`}>
                 <CardContent className="pt-4">
                   <div className="flex items-center space-x-3">
-                    <Clock className={`w-6 h-6 ${isTimeUp ? 'text-red-600' : isTimeCritical ? 'text-yellow-600 animate-pulse' : 'text-blue-600'}`} />
+                    <Clock className={`w-6 h-6 ${isTimeUp ? 'text-red-600' : isTimeCritical ? 'text-yellow-600 animate-pulse transition-all duration-300' : 'text-blue-600'}`} />
                     <div className="flex-1">
                       <div className="flex items-center justify-between mb-2">
                         <span className="text-sm font-medium text-gray-700">Time Remaining</span>
-                        <span className={`text-lg font-bold ${isTimeUp ? 'text-red-600' : isTimeCritical ? 'text-yellow-600 animate-pulse' : 'text-blue-600'}`}>
+                        <span className={`text-lg font-bold ${isTimeUp ? 'text-red-600' : isTimeCritical ? 'text-yellow-600 animate-pulse transition-all duration-300' : 'text-blue-600'}`}>
                           {Math.floor(timeLeft / 60)}:{(timeLeft % 60).toString().padStart(2, '0')}
                         </span>
                       </div>
                       <Progress 
                         value={progressPercentage} 
-                        className={`h-2 ${isTimeUp ? 'bg-red-200' : isTimeCritical ? 'bg-yellow-200' : 'bg-blue-200'}`}
+                        className={`h-2 ${isTimeUp ? 'bg-red-200' : isTimeCritical ? 'bg-yellow-200 transition-colors duration-300' : 'bg-blue-200'}`}
                       />
                     </div>
                   </div>
