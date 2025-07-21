@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useParams } from 'next/navigation';
 import Timer from '../../../components/Timer';
 import AnswerButton from '../../../components/AnswerButton';
@@ -39,6 +39,11 @@ const PlayerPage = () => {
     if (name) {
       socket.on('broadcast-question', (q: Question, timer: number) => {
         console.log('Received broadcast-question on player page:', q);
+        // Reset audio if it's playing
+        if (timerAudioRef.current) {
+          timerAudioRef.current.pause();
+          timerAudioRef.current.currentTime = 0;
+        }
         setQuestion(q);
         setAnswer('');
         setAnswered(false);
@@ -60,6 +65,11 @@ const PlayerPage = () => {
 
       socket.on('all-players-ready', () => {
         console.log('All players ready, resetting screen');
+        // Reset audio if it's playing
+        if (timerAudioRef.current) {
+          timerAudioRef.current.pause();
+          timerAudioRef.current.currentTime = 0;
+        }
         setQuestion(null);
         setAnswer('');
         setTimeLeft(0);
@@ -70,6 +80,11 @@ const PlayerPage = () => {
       });
 
       socket.on('question-ended', () => {
+        // Reset audio if it's playing
+        if (timerAudioRef.current) {
+          timerAudioRef.current.pause();
+          timerAudioRef.current.currentTime = 0;
+        }
         setQuestion(null);
         setAnswer('');
         setTimeLeft(0);
@@ -89,12 +104,41 @@ const PlayerPage = () => {
     };
   }, [name]);
 
+  // Audio reference for timer sound
+  const timerAudioRef = useRef<HTMLAudioElement | null>(null);
+
+  // Initialize audio on component mount
+  useEffect(() => {
+    // Create and preload the audio
+    timerAudioRef.current = new Audio('/assets/sounds/timer.mp3');
+    
+    // Preload the audio file
+    if (timerAudioRef.current) {
+      timerAudioRef.current.load();
+      // Set volume to 80%
+      timerAudioRef.current.volume = 0.8;
+    }
+    
+    return () => {
+      if (timerAudioRef.current) {
+        timerAudioRef.current.pause();
+        timerAudioRef.current = null;
+      }
+    };
+  }, []);
+
   // Update timer countdown
   useEffect(() => {
     if (timeLeft > 0 && question) {
       const interval = setInterval(() => {
         setTimeLeft(prev => {
           const newTime = Math.max(0, prev - 1);
+          // Play timer sound when exactly 5 seconds remaining to alert the user
+          // This works in conjunction with the visual yellow indicator
+          if (newTime === 5 && timerAudioRef.current) {
+            timerAudioRef.current.play()
+              .catch(err => console.error('Error playing timer sound:', err));
+          }
           // Show ready button when timer reaches 0
           if (newTime === 0 && !showReadyButton) {
             setShowReadyButton(true);
@@ -118,12 +162,13 @@ const PlayerPage = () => {
 
   const progressPercentage = totalTime > 0 ? ((totalTime - timeLeft) / totalTime) * 100 : 0;
   const isTimeUp = timeLeft === 0 && question && !answer;
+  const isTimeCritical = timeLeft <= 5 && timeLeft > 0 && question;
 
   // Decode the name parameter
   const decodedName = decodeURIComponent(name || '');
 
   return (
-    <Layout title={`Welcome, ${decodedName}!`}>
+    <Layout title={`You've got this, ${decodedName}! Believe in yourself and have fun—good luck!😉`}>
       <div className="space-y-6">
         {/* Player Info Card */}
         <Card className="bg-gradient-to-r from-blue-600 to-purple-600 text-white border-0 shadow-xl">
@@ -140,20 +185,20 @@ const PlayerPage = () => {
           <div className="space-y-6">
             {/* Timer and Status */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <Card className={`${isTimeUp ? 'bg-red-50 border-red-200' : 'bg-blue-50 border-blue-200'}`}>
+              <Card className={`${isTimeUp ? 'bg-red-50 border-red-200' : isTimeCritical ? 'bg-yellow-50 border-yellow-200' : 'bg-blue-50 border-blue-200'}`}>
                 <CardContent className="pt-4">
                   <div className="flex items-center space-x-3">
-                    <Clock className={`w-6 h-6 ${isTimeUp ? 'text-red-600' : 'text-blue-600'}`} />
+                    <Clock className={`w-6 h-6 ${isTimeUp ? 'text-red-600' : isTimeCritical ? 'text-yellow-600 animate-pulse' : 'text-blue-600'}`} />
                     <div className="flex-1">
                       <div className="flex items-center justify-between mb-2">
                         <span className="text-sm font-medium text-gray-700">Time Remaining</span>
-                        <span className={`text-lg font-bold ${isTimeUp ? 'text-red-600' : 'text-blue-600'}`}>
+                        <span className={`text-lg font-bold ${isTimeUp ? 'text-red-600' : isTimeCritical ? 'text-yellow-600 animate-pulse' : 'text-blue-600'}`}>
                           {Math.floor(timeLeft / 60)}:{(timeLeft % 60).toString().padStart(2, '0')}
                         </span>
                       </div>
                       <Progress 
                         value={progressPercentage} 
-                        className={`h-2 ${isTimeUp ? 'bg-red-200' : 'bg-blue-200'}`}
+                        className={`h-2 ${isTimeUp ? 'bg-red-200' : isTimeCritical ? 'bg-yellow-200' : 'bg-blue-200'}`}
                       />
                     </div>
                   </div>

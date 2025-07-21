@@ -19,7 +19,9 @@ import {
   CheckCircle,
   AlertCircle,
   Eye,
-  StopCircle
+  StopCircle,
+  ChevronDown,
+  ChevronUp
 } from 'lucide-react';
 import { Alert, AlertDescription } from './ui/alert';
 
@@ -32,6 +34,7 @@ const QuestionManager = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   const [currentQuestion, setCurrentQuestion] = useState<Question | null>(null);
+  const [isAddQuestionExpanded, setIsAddQuestionExpanded] = useState(true);
 
   useEffect(() => {
     fetch('/api/questions')
@@ -141,15 +144,24 @@ const QuestionManager = () => {
 
       {/* Add New Question */}
       <Card className="border-2 border-dashed border-blue-200 bg-blue-50/50">
-        <CardHeader>
-          <CardTitle className="flex items-center space-x-2 text-blue-800">
-            <Plus className="w-5 h-5" />
-            <span>Add New Question</span>
+        <CardHeader className="cursor-pointer" onClick={() => setIsAddQuestionExpanded(!isAddQuestionExpanded)}>
+          <CardTitle className="flex items-center justify-between text-blue-800">
+            <div className="flex items-center space-x-2">
+              <Plus className="w-5 h-5" />
+              <span>Add New Question</span>
+            </div>
+            <Button variant="ghost" size="sm" className="p-0 h-8 w-8" onClick={(e) => {
+              e.stopPropagation();
+              setIsAddQuestionExpanded(!isAddQuestionExpanded);
+            }}>
+              {isAddQuestionExpanded ? <ChevronUp className="h-5 w-5" /> : <ChevronDown className="h-5 w-5" />}
+            </Button>
           </CardTitle>
           <CardDescription>
             Create a new quiz question with multiple choice options
           </CardDescription>
         </CardHeader>
+        {isAddQuestionExpanded && (
         <CardContent className="space-y-4">
           <div className="space-y-2">
             <Label htmlFor="question" className="text-sm font-medium">
@@ -212,6 +224,7 @@ const QuestionManager = () => {
             )}
           </Button>
         </CardContent>
+        )}
       </Card>
 
       {/* Timer Settings */}

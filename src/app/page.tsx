@@ -62,7 +62,7 @@ export default function Home() {
               <Sparkles className="w-12 h-12 text-yellow-300" />
             </div>
             <CardDescription className="text-xl text-blue-100">
-              Welcome to the AMA Computer College Interactive Quiz System
+              Welcome to the AMA Nutration Month 2025 Interactive Quiz System
             </CardDescription>
           </CardHeader>
         </Card>

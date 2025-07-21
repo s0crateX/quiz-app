@@ -16,12 +16,12 @@ const Layout: React.FC<LayoutProps> = ({
   className = "" 
 }) => {
   return (
-    <div className={`min-h-screen bg-gradient-to-br from-blue-50 via-white to-red-50 ${className}`}>
+    <div className={`min-h-screen bg-gradient-to-br from-blue-50 via-white to-red-50 flex flex-col ${className}`}>
       {/* Header */}
       {showLogo && (
         <header className="bg-white/80 backdrop-blur-sm border-b border-gray-200 shadow-sm">
           <div className="container mx-auto px-4 py-4">
-            <div className="flex items-center justify-center space-x-4">
+            <div className="flex items-center justify-center space-x-10">
               <Image
                 src="/assets/images/AMA-Logo.png"
                 alt="AMA Computer College"
@@ -29,21 +29,21 @@ const Layout: React.FC<LayoutProps> = ({
                 height={80}
                 className="object-contain"
               />
-              <div className="text-center">
-                <h1 className="text-2xl md:text-3xl font-bold text-red-700">
-                  AMA Computer College
-                </h1>
-                <p className="text-sm md:text-base text-blue-600 font-medium">
-                  Interactive Quiz System
-                </p>
-              </div>
+              <Image
+                src="/assets/images/AMA-Senior-High-logo.png"
+                alt="AMA Senior High"
+                width={80}
+                height={80}
+                className="object-contain"
+              />
+              
             </div>
           </div>
         </header>
       )}
 
       {/* Main Content */}
-      <main className="container mx-auto px-4 py-8">
+      <main className="container mx-auto px-4 py-8 flex-grow">
         {title && (
           <div className="text-center mb-8">
             <h2 className="text-3xl md:text-4xl font-bold text-gray-800 mb-2">
@@ -63,15 +63,22 @@ const Layout: React.FC<LayoutProps> = ({
         <div className="container mx-auto px-4 text-center">
           <div className="flex items-center justify-center space-x-2 mb-2">
             <Image
-              src="/assets/images/AMA-Senior-High-logo.png"
+              src="/assets/images/AMA-Logo.png"
               alt="AMA Senior High"
               width={40}
               height={40}
               className="object-contain"
             />
             <p className="text-sm">
-              © 2024 AMA Computer College. All rights reserved.
+              © 2025 AMA University - General Santos Branch. All rights reserved.
             </p>
+            <Image
+              src="/assets/images/AMA-Senior-High-logo.png"
+              alt="AMA Senior High"
+              width={40}
+              height={40}
+              className="object-contain"
+            />
           </div>
           <p className="text-xs text-gray-400">
             Empowering minds through interactive learning
