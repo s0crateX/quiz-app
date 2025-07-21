@@ -10,14 +10,16 @@ import { Label } from './ui/label';
 import { Textarea } from './ui/textarea';
 import { Badge } from './ui/badge';
 import { Separator } from './ui/separator';
-import { 
-  Plus, 
-  Trash2, 
-  Play, 
-  Clock, 
-  HelpCircle, 
+import {
+  Plus,
+  Trash2,
+  Play,
+  Clock,
+  HelpCircle,
   CheckCircle,
-  AlertCircle 
+  AlertCircle,
+  Eye,
+  StopCircle
 } from 'lucide-react';
 import { Alert, AlertDescription } from './ui/alert';
 
@@ -29,12 +31,27 @@ const QuestionManager = () => {
   const [timer, setTimer] = useState(30);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
+  const [currentQuestion, setCurrentQuestion] = useState<Question | null>(null);
 
   useEffect(() => {
     fetch('/api/questions')
       .then(res => res.json())
       .then(data => setQuestions(data))
       .catch(err => setError('Failed to load questions'));
+
+    // Listen for question broadcasts to track current question
+    socket.on('broadcast-question', (question: Question) => {
+      setCurrentQuestion(question);
+    });
+
+    socket.on('question-ended', () => {
+      setCurrentQuestion(null);
+    });
+
+    return () => {
+      socket.off('broadcast-question');
+      socket.off('question-ended');
+    };
   }, []);
 
   const addQuestion = async () => {
@@ -91,6 +108,18 @@ const QuestionManager = () => {
   const startQuestion = (question: Question) => {
     console.log('Emitting start-question:', question, timer);
     socket.emit('start-question', question, timer);
+  };
+
+  const revealAnswer = () => {
+    if (currentQuestion) {
+      console.log('Revealing correct answer:', currentQuestion.answer);
+      socket.emit('reveal-answer', currentQuestion.answer);
+    }
+  };
+
+  const endQuestion = () => {
+    console.log('Ending current question');
+    socket.emit('end-question');
   };
 
   const handleOptionChange = (index: number, value: string) => {
@@ -214,6 +243,48 @@ const QuestionManager = () => {
           </div>
         </CardContent>
       </Card>
+
+      {/* Current Question Control */}
+      {currentQuestion && (
+        <Card className="bg-green-50 border-green-200">
+          <CardHeader>
+            <CardTitle className="flex items-center space-x-2 text-green-800">
+              <Play className="w-5 h-5" />
+              <span>Current Question Control</span>
+            </CardTitle>
+            <CardDescription>
+              Control the currently active question
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="p-4 bg-white rounded-lg border">
+              <h4 className="font-medium text-gray-800 mb-2">
+                Question #{currentQuestion.id}: {currentQuestion.question}
+              </h4>
+              <p className="text-sm text-gray-600">
+                Correct Answer: <span className="font-semibold text-green-600">{currentQuestion.answer}</span>
+              </p>
+            </div>
+            
+            <div className="flex flex-wrap gap-3">
+              <Button
+                onClick={revealAnswer}
+                className="bg-blue-600 hover:bg-blue-700"
+              >
+                <Eye className="w-4 h-4 mr-2" />
+                Show Correct Answer
+              </Button>
+              <Button
+                onClick={endQuestion}
+                variant="destructive"
+              >
+                <StopCircle className="w-4 h-4 mr-2" />
+                End Question
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Questions List */}
       <Card>

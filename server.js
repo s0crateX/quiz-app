@@ -37,9 +37,13 @@ app.prepare().then(() => {
   let playerScores = {};
   let questionAnswers = {};
   let questionTimer = null;
+  let readyPlayers = new Set();
+  let connectedPlayers = new Set();
+  let scoresCalculated = false;
 
   io.on('connection', (socket) => {
     console.log('Client connected:', socket.id);
+    connectedPlayers.add(socket.id);
 
     // Handle question broadcasting
     socket.on('start-question', (question, timer) => {
@@ -49,6 +53,8 @@ app.prepare().then(() => {
       currentQuestion = question;
       currentTimer = timer;
       questionAnswers = {};
+      readyPlayers.clear(); // Reset ready players for new question
+      scoresCalculated = false;
       
       // Clear any existing timer
       if (questionTimer) {
@@ -58,9 +64,10 @@ app.prepare().then(() => {
       // Broadcast question to all clients
       io.emit('broadcast-question', question, timer);
       
-      // Set timer to end question automatically
+      // Set timer to emit timer-ended event (not to end question automatically)
       questionTimer = setTimeout(() => {
-        endQuestionAndCalculateScores();
+        console.log('Timer ended, emitting timer-ended event');
+        io.emit('timer-ended');
       }, timer * 1000);
     });
 
@@ -102,6 +109,7 @@ app.prepare().then(() => {
     // Handle revealing correct answer
     socket.on('reveal-answer', (correctAnswer) => {
       console.log('Revealing correct answer:', correctAnswer);
+      calculateAndEmitScores();
       io.emit('reveal-correct', correctAnswer);
     });
 
@@ -111,10 +119,58 @@ app.prepare().then(() => {
       endQuestionAndCalculateScores();
     });
 
+    // Handle player ready
+    socket.on('player-ready', (playerName) => {
+      console.log(`Player ${playerName} is ready (socket: ${socket.id})`);
+      readyPlayers.add(socket.id);
+      
+      console.log(`Ready players: ${readyPlayers.size}, Connected players: ${connectedPlayers.size}`);
+      
+      // Check if all connected players are ready
+      if (readyPlayers.size >= connectedPlayers.size && connectedPlayers.size > 0) {
+        console.log('All players are ready, emitting all-players-ready and question-ended events');
+        io.emit('all-players-ready');
+        
+        // End the question when all players are ready
+        setTimeout(() => {
+          console.log('Emitting question-ended event after all players ready');
+          io.emit('question-ended');
+        }, 1000); // 1 second delay to allow UI updates
+        
+        readyPlayers.clear(); // Reset for next question
+      }
+    });
+
     socket.on('disconnect', () => {
       console.log('Client disconnected:', socket.id);
+      connectedPlayers.delete(socket.id);
+      readyPlayers.delete(socket.id);
     });
   });
+
+  function calculateAndEmitScores() {
+    if (!currentQuestion || scoresCalculated) {
+      return;
+    }
+
+    console.log('=== CALCULATING SCORES ===');
+    const roundWinners = [];
+    Object.keys(questionAnswers).forEach(player => {
+      const playerAnswer = questionAnswers[player];
+      if (playerAnswer.answer === currentQuestion.answer) {
+        playerScores[player] = (playerScores[player] || 0) + 1;
+        roundWinners.push(player);
+      }
+    });
+
+    console.log('Updated player scores:', playerScores);
+    io.emit('update-scores', playerScores);
+
+    if (roundWinners.length > 0) {
+      io.emit('round-results', roundWinners);
+    }
+    scoresCalculated = true;
+  }
 
   // Function to end question and calculate scores
   function endQuestionAndCalculateScores() {
@@ -123,58 +179,22 @@ app.prepare().then(() => {
       return;
     }
     
-    console.log('=== ENDING QUESTION AND CALCULATING SCORES ===');
-    console.log('Current question:', currentQuestion);
-    console.log('Question answers received:', questionAnswers);
+    console.log('=== ENDING QUESTION ===');
     
+    calculateAndEmitScores();
+
     // Clear the timer
     if (questionTimer) {
       clearTimeout(questionTimer);
       questionTimer = null;
     }
     
-    // Calculate scores for this round
-    const roundWinners = [];
-    
-    Object.keys(questionAnswers).forEach(player => {
-      const playerAnswer = questionAnswers[player];
-      console.log(`Checking ${player}: answered "${playerAnswer.answer}" vs correct "${currentQuestion.answer}"`);
-      
-      if (playerAnswer.answer === currentQuestion.answer) {
-        // Player got it right
-        playerScores[player] = (playerScores[player] || 0) + 1;
-        roundWinners.push(player);
-        console.log(`✓ ${player} got it right! New score: ${playerScores[player]}`);
-      } else {
-        console.log(`✗ ${player} got it wrong`);
-      }
-    });
-    
-    console.log('=== FINAL RESULTS ===');
-    console.log('Round winners:', roundWinners);
-    console.log('Updated player scores:', playerScores);
-    console.log('Emitting update-scores event...');
-    
-    // Emit score updates
-    io.emit('update-scores', playerScores);
-    
-    // Emit round results
-    if (roundWinners.length > 0) {
-      console.log('Emitting round-results event...');
-      io.emit('round-results', roundWinners);
-    }
-    
     // Reveal correct answer
-    console.log('Emitting reveal-correct event...');
     io.emit('reveal-correct', currentQuestion.answer);
     
-    // End the question after a delay
-    setTimeout(() => {
-      console.log('Emitting question-ended event...');
-      io.emit('question-ended');
-      currentQuestion = null;
-      questionAnswers = {};
-    }, 3000); // 3 second delay to show results
+    // Reset current question state but don't emit question-ended yet
+    currentQuestion = null;
+    questionAnswers = {};
   }
 
   // Function to save answer to file

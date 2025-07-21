@@ -22,6 +22,7 @@ const DisplayPage = () => {
   const [answer, setAnswer] = useState('');
   const [timeLeft, setTimeLeft] = useState(0);
   const [totalTime, setTotalTime] = useState(0);
+  const [roundWinners, setRoundWinners] = useState<string[]>([]);
 
   useEffect(() => {
     socket.on('broadcast-question', (q: Question, timer: number) => {
@@ -36,6 +37,23 @@ const DisplayPage = () => {
       setAnswer(correctAnswer);
     });
 
+    socket.on('round-results', (winners: string[]) => {
+      console.log('Display received round results:', winners);
+      setRoundWinners(winners);
+      // Clear winners after 8 seconds
+      setTimeout(() => {
+        setRoundWinners([]);
+      }, 8000);
+    });
+
+    socket.on('all-players-ready', () => {
+      console.log('All players ready, resetting display screen');
+      setQuestion(null);
+      setAnswer('');
+      setTimeLeft(0);
+      setTotalTime(0);
+    });
+
     socket.on('question-ended', () => {
       setQuestion(null);
       setAnswer('');
@@ -46,6 +64,8 @@ const DisplayPage = () => {
     return () => {
       socket.off('broadcast-question');
       socket.off('reveal-correct');
+      socket.off('round-results');
+      socket.off('all-players-ready');
       socket.off('question-ended');
     };
   }, []);
@@ -158,16 +178,42 @@ const DisplayPage = () => {
                 </div>
 
                 {answer && (
-                  <Card className="bg-green-50 border-green-200 border-2">
-                    <CardContent className="pt-4">
-                      <div className="flex items-center justify-center space-x-2 text-green-800">
-                        <CheckCircle className="w-6 h-6" />
-                        <span className="text-xl font-bold">
-                          Correct Answer: {answer}
-                        </span>
-                      </div>
-                    </CardContent>
-                  </Card>
+                  <div className="space-y-4">
+                    <Card className="bg-green-50 border-green-200 border-2">
+                      <CardContent className="pt-4">
+                        <div className="flex items-center justify-center space-x-2 text-green-800">
+                          <CheckCircle className="w-6 h-6" />
+                          <span className="text-xl font-bold">
+                            Correct Answer: {answer}
+                          </span>
+                        </div>
+                      </CardContent>
+                    </Card>
+
+                    {roundWinners.length > 0 && (
+                      <Card className="bg-gradient-to-r from-yellow-400 to-orange-500 text-white border-0 shadow-xl animate-pulse">
+                        <CardContent className="pt-4">
+                          <div className="text-center space-y-2">
+                            <div className="flex items-center justify-center space-x-2">
+                              <Trophy className="w-8 h-8" />
+                              <span className="text-2xl font-bold">🎉 Round Winners! 🎉</span>
+                              <Trophy className="w-8 h-8" />
+                            </div>
+                            <div className="flex flex-wrap justify-center gap-2 mt-4">
+                              {roundWinners.map((winner, index) => (
+                                <div
+                                  key={index}
+                                  className="bg-white/20 backdrop-blur-sm px-4 py-2 rounded-full text-lg font-bold"
+                                >
+                                  🏆 {winner}
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    )}
+                  </div>
                 )}
               </CardContent>
             </Card>

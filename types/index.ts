@@ -33,6 +33,8 @@ export interface ServerToClientEvents {
   'round-results': (winners: string[]) => void;
   'new-player': (player: Player) => void;
   'answer-submitted': (data: SubmittedAnswer) => void;
+  'timer-ended': () => void;
+  'all-players-ready': () => void;
 }
 
 export interface ClientToServerEvents {
@@ -40,6 +42,7 @@ export interface ClientToServerEvents {
   'submit-answer': (answer: SubmittedAnswer) => void;
   'reveal-answer': (correctAnswer: string) => void;
   'end-question': () => void;
+  'player-ready': (playerName: string) => void;
 }
 
 export type MySocket = Socket<ClientToServerEvents, ServerToClientEvents>;

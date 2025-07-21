@@ -10,14 +10,16 @@ import { Card, CardContent, CardHeader, CardTitle } from '../../../components/ui
 import { Badge } from '../../../components/ui/badge';
 import { Progress } from '../../../components/ui/progress';
 import { Alert, AlertDescription } from '../../../components/ui/alert';
-import { 
-  User, 
-  Clock, 
-  CheckCircle, 
+import { Button } from '../../../components/ui/button';
+import {
+  User,
+  Clock,
+  CheckCircle,
   AlertCircle,
   Sparkles,
   Trophy,
-  Target
+  Target,
+  UserCheck
 } from 'lucide-react';
 import Layout from '../../../components/Layout';
 
@@ -30,6 +32,8 @@ const PlayerPage = () => {
   const [timeLeft, setTimeLeft] = useState(0);
   const [totalTime, setTotalTime] = useState(0);
   const [selectedOption, setSelectedOption] = useState<string>('');
+  const [showReadyButton, setShowReadyButton] = useState(false);
+  const [isReady, setIsReady] = useState(false);
 
   useEffect(() => {
     if (name) {
@@ -41,10 +45,28 @@ const PlayerPage = () => {
         setSelectedOption('');
         setTimeLeft(timer);
         setTotalTime(timer);
+        setShowReadyButton(false);
+        setIsReady(false);
       });
 
       socket.on('reveal-correct', (correctAnswer: string) => {
         setAnswer(correctAnswer);
+      });
+
+      socket.on('timer-ended', () => {
+        console.log('Timer ended, showing ready button');
+        setShowReadyButton(true);
+      });
+
+      socket.on('all-players-ready', () => {
+        console.log('All players ready, resetting screen');
+        setQuestion(null);
+        setAnswer('');
+        setTimeLeft(0);
+        setTotalTime(0);
+        setSelectedOption('');
+        setShowReadyButton(false);
+        setIsReady(false);
       });
 
       socket.on('question-ended', () => {
@@ -53,29 +75,45 @@ const PlayerPage = () => {
         setTimeLeft(0);
         setTotalTime(0);
         setSelectedOption('');
+        setShowReadyButton(false);
+        setIsReady(false);
       });
     }
 
     return () => {
       socket.off('broadcast-question');
       socket.off('reveal-correct');
+      socket.off('timer-ended');
+      socket.off('all-players-ready');
       socket.off('question-ended');
     };
   }, [name]);
 
   // Update timer countdown
   useEffect(() => {
-    if (timeLeft > 0 && question && !answer) {
+    if (timeLeft > 0 && question) {
       const interval = setInterval(() => {
-        setTimeLeft(prev => Math.max(0, prev - 1));
+        setTimeLeft(prev => {
+          const newTime = Math.max(0, prev - 1);
+          // Show ready button when timer reaches 0
+          if (newTime === 0 && !showReadyButton) {
+            setShowReadyButton(true);
+          }
+          return newTime;
+        });
       }, 1000);
       return () => clearInterval(interval);
     }
-  }, [timeLeft, question, answer]);
+  }, [timeLeft, question, showReadyButton]);
 
   const handleAnswerSelect = (option: string) => {
     setSelectedOption(option);
     setAnswered(true);
+  };
+
+  const handleReady = () => {
+    setIsReady(true);
+    socket.emit('player-ready', decodedName);
   };
 
   const progressPercentage = totalTime > 0 ? ((totalTime - timeLeft) / totalTime) * 100 : 0;
@@ -228,6 +266,38 @@ const PlayerPage = () => {
                           </Badge>
                         </div>
                       )}
+                    </CardContent>
+                  </Card>
+                )}
+
+                {showReadyButton && (
+                  <Card className="bg-blue-50 border-blue-200 border-2">
+                    <CardContent className="pt-4">
+                      <div className="text-center space-y-4">
+                        <div className="flex items-center justify-center space-x-2 text-blue-800">
+                          <UserCheck className="w-6 h-6" />
+                          <span className="text-lg font-bold">
+                            Ready for the next question?
+                          </span>
+                        </div>
+                        <Button
+                          onClick={handleReady}
+                          disabled={isReady}
+                          className={`w-full ${isReady ? 'bg-green-600' : 'bg-blue-600 hover:bg-blue-700'}`}
+                        >
+                          {isReady ? (
+                            <div className="flex items-center space-x-2">
+                              <CheckCircle className="w-5 h-5" />
+                              <span>Ready! Waiting for others...</span>
+                            </div>
+                          ) : (
+                            <div className="flex items-center space-x-2">
+                              <UserCheck className="w-5 h-5" />
+                              <span>I&apos;m Ready!</span>
+                            </div>
+                          )}
+                        </Button>
+                      </div>
                     </CardContent>
                   </Card>
                 )}

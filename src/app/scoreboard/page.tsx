@@ -62,6 +62,7 @@ const ScoreboardPage = () => {
     fetchInitialData();
 
     socket.on('update-scores', (newScores: { [key: string]: number }) => {
+      console.log('Received score update:', newScores);
       setScores(prevScores => {
         const updatedScores = prevScores.map(score => ({
           ...score,
@@ -72,7 +73,12 @@ const ScoreboardPage = () => {
     });
 
     socket.on('round-results', (winners: string[]) => {
+      console.log('Received round results:', winners);
       setRoundWinners(winners);
+      // Clear winners after 5 seconds to show fresh results for next round
+      setTimeout(() => {
+        setRoundWinners([]);
+      }, 5000);
     });
 
     socket.on('new-player', (newPlayer: Player) => {
