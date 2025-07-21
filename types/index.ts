@@ -32,11 +32,14 @@ export interface ServerToClientEvents {
   'update-scores': (scores: { [key:string]: number }) => void;
   'round-results': (winners: string[]) => void;
   'new-player': (player: Player) => void;
+  'answer-submitted': (data: SubmittedAnswer) => void;
 }
 
 export interface ClientToServerEvents {
   'start-question': (question: Question, timer: number) => void;
   'submit-answer': (answer: SubmittedAnswer) => void;
+  'reveal-answer': (correctAnswer: string) => void;
+  'end-question': () => void;
 }
 
 export type MySocket = Socket<ClientToServerEvents, ServerToClientEvents>;
