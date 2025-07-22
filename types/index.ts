@@ -5,6 +5,8 @@ export interface Question {
   question: string;
   options: string[];
   answer: string;
+  difficulty?: string;
+  points?: number;
 }
 
 export interface Player {
@@ -17,6 +19,9 @@ export interface Answer {
   player: string;
   answer: string;
   correct: boolean;
+  points?: number;
+  difficulty?: string;
+  timestamp?: string;
 }
 
 export interface SubmittedAnswer {

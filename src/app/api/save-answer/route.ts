@@ -12,13 +12,33 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
     }
 
+    // Get the question to determine points
+    const questionsFile = path.join(process.cwd(), 'data', 'questions.txt');
+    let points = 10; // Default points
+    let difficulty = 'medium'; // Default difficulty
+    
+    if (fs.existsSync(questionsFile)) {
+      const data = fs.readFileSync(questionsFile, 'utf8');
+      const questions = data.trim() ? data.trim().split('\n').map(line => JSON.parse(line)) : [];
+      const question = questions.find(q => q.id === questionId);
+      
+      if (question) {
+        points = question.points || 10;
+        difficulty = question.difficulty || 'medium';
+      }
+    }
+    
     const newAnswer = {
       questionId,
       player,
       answer,
       correct: correct || false,
+      points: correct ? points : 0,
+      difficulty,
       timestamp: new Date().toISOString()
     };
+    
+    console.log('Saving answer with points:', newAnswer);
 
     // Ensure data directory exists
     const dataDir = path.join(process.cwd(), 'data');

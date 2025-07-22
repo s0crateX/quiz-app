@@ -45,7 +45,27 @@ app.prepare().then(() => {
     console.log('Client connected:', socket.id);
     connectedPlayers.add(socket.id);
 
-    // Handle question broadcasting
+    // Handle showing question without starting timer
+    socket.on('show-question', (question) => {
+      console.log('Showing question without starting timer:', question);
+      
+      // Store current question state
+      currentQuestion = question;
+      questionAnswers = {};
+      readyPlayers.clear(); // Reset ready players for new question
+      scoresCalculated = false;
+      
+      // Clear any existing timer
+      if (questionTimer) {
+        clearTimeout(questionTimer);
+        questionTimer = null;
+      }
+      
+      // Broadcast question to all clients with 0 timer to indicate no timer
+      io.emit('broadcast-question', question, 0);
+    });
+
+    // Handle question broadcasting with timer
     socket.on('start-question', (question, timer) => {
       console.log('Broadcasting question:', question, 'Timer:', timer);
       
@@ -155,15 +175,20 @@ app.prepare().then(() => {
 
     console.log('=== CALCULATING SCORES ===');
     const roundWinners = [];
+    
+    // Get points based on difficulty
+    const pointsValue = currentQuestion.points || 10; // Default to 10 if not specified
+    
     Object.keys(questionAnswers).forEach(player => {
       const playerAnswer = questionAnswers[player];
       if (playerAnswer.answer === currentQuestion.answer) {
-        playerScores[player] = (playerScores[player] || 0) + 1;
+        // Use points value instead of fixed 1 point
+        playerScores[player] = (playerScores[player] || 0) + pointsValue;
         roundWinners.push(player);
       }
     });
 
-    console.log('Updated player scores:', playerScores);
+    console.log('Updated player scores with points value:', pointsValue, playerScores);
     io.emit('update-scores', playerScores);
 
     if (roundWinners.length > 0) {
@@ -211,11 +236,17 @@ app.prepare().then(() => {
         fs.mkdirSync(dataDir, { recursive: true });
       }
       
+      // Get points based on difficulty
+      const pointsValue = currentQuestion && currentQuestion.points ? currentQuestion.points : 10;
+      
       const answerRecord = {
         ...answerData,
+        points: answerData.correct ? pointsValue : 0,
+        difficulty: currentQuestion ? (currentQuestion.difficulty || 'medium') : 'medium',
         timestamp: new Date().toISOString()
       };
       
+      console.log('Saving answer record with points:', answerRecord);
       fs.appendFileSync(answersFile, JSON.stringify(answerRecord) + '\n');
     } catch (error) {
       console.error('Error saving answer to file:', error);

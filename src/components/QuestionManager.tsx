@@ -21,7 +21,9 @@ import {
   Eye,
   StopCircle,
   ChevronDown,
-  ChevronUp
+  ChevronUp,
+  Edit,
+  Save
 } from 'lucide-react';
 import { Alert, AlertDescription } from './ui/alert';
 
@@ -30,11 +32,15 @@ const QuestionManager = () => {
   const [newQuestion, setNewQuestion] = useState('');
   const [options, setOptions] = useState(['', '', '', '']);
   const [answer, setAnswer] = useState('');
-  const [timer, setTimer] = useState(30);
+  const [difficulty, setDifficulty] = useState('medium');
+  const [points, setPoints] = useState(10);
+  const [timer, setTimer] = useState(5);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   const [currentQuestion, setCurrentQuestion] = useState<Question | null>(null);
   const [isAddQuestionExpanded, setIsAddQuestionExpanded] = useState(true);
+  const [editingQuestion, setEditingQuestion] = useState<Question | null>(null);
+  const [isEditing, setIsEditing] = useState(false);
 
   useEffect(() => {
     fetch('/api/questions')
@@ -73,7 +79,9 @@ const QuestionManager = () => {
         body: JSON.stringify({ 
           question: newQuestion.trim(), 
           options: options.map(opt => opt.trim()), 
-          answer: answer.trim() 
+          answer: answer.trim(),
+          difficulty,
+          points
         }),
       });
       
@@ -86,8 +94,75 @@ const QuestionManager = () => {
       setNewQuestion('');
       setOptions(['', '', '', '']);
       setAnswer('');
+      setDifficulty('medium');
+      setPoints(10);
     } catch (err) {
       setError('Failed to add question');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const startEditQuestion = (question: Question) => {
+    setEditingQuestion(question);
+    setNewQuestion(question.question);
+    setOptions([...question.options]);
+    setAnswer(question.answer);
+    setDifficulty(question.difficulty || 'medium');
+    setPoints(question.points || 10);
+    setIsEditing(true);
+    setIsAddQuestionExpanded(true);
+  };
+
+  const cancelEdit = () => {
+    setEditingQuestion(null);
+    setNewQuestion('');
+    setOptions(['', '', '', '']);
+    setAnswer('');
+    setDifficulty('medium');
+    setPoints(10);
+    setIsEditing(false);
+  };
+
+  const updateQuestion = async () => {
+    if (!editingQuestion) return;
+    if (!newQuestion.trim() || options.some(opt => !opt.trim()) || !answer.trim()) {
+      setError('Please fill in all fields');
+      return;
+    }
+
+    setIsLoading(true);
+    setError('');
+    
+    try {
+      const res = await fetch('/api/questions', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          id: editingQuestion.id,
+          question: newQuestion.trim(), 
+          options: options.map(opt => opt.trim()), 
+          answer: answer.trim(),
+          difficulty,
+          points
+        }),
+      });
+      
+      if (!res.ok) throw new Error('Failed to update question');
+      
+      const updatedQuestion = await res.json();
+      setQuestions(questions.map(q => q.id === updatedQuestion.id ? updatedQuestion : q));
+      
+      // Reset form
+      setNewQuestion('');
+      setOptions(['', '', '', '']);
+      setAnswer('');
+      setDifficulty('medium');
+      setPoints(10);
+      setEditingQuestion(null);
+      setIsEditing(false);
+    } catch (err) {
+      setError('Failed to update question');
     } finally {
       setIsLoading(false);
     }
@@ -108,15 +183,20 @@ const QuestionManager = () => {
     }
   };
 
+  const showQuestion = (question: Question) => {
+    console.log('Showing question without starting timer:', question);
+socket.emit('start-question', question, 0); // Using start-question with 0 timer to show without countdown
+  };
+
   const startQuestion = (question: Question) => {
     console.log('Emitting start-question:', question, timer);
     socket.emit('start-question', question, timer);
   };
 
-  const revealAnswer = () => {
-    if (currentQuestion) {
-      console.log('Revealing correct answer:', currentQuestion.answer);
-      socket.emit('reveal-answer', currentQuestion.answer);
+  const revealAnswer = (question = currentQuestion) => {
+    if (question) {
+      console.log('Revealing correct answer:', question.answer);
+      socket.emit('reveal-answer', question.answer);
     }
   };
 
@@ -142,13 +222,13 @@ const QuestionManager = () => {
         </Alert>
       )}
 
-      {/* Add New Question */}
+      {/* Add/Edit Question */}
       <Card className="border-2 border-dashed border-blue-200 bg-blue-50/50">
         <CardHeader className="cursor-pointer" onClick={() => setIsAddQuestionExpanded(!isAddQuestionExpanded)}>
           <CardTitle className="flex items-center justify-between text-blue-800">
             <div className="flex items-center space-x-2">
-              <Plus className="w-5 h-5" />
-              <span>Add New Question</span>
+              {isEditing ? <Edit className="w-5 h-5" /> : <Plus className="w-5 h-5" />}
+              <span>{isEditing ? `Edit Question #${editingQuestion?.id}` : 'Add New Question'}</span>
             </div>
             <Button variant="ghost" size="sm" className="p-0 h-8 w-8" onClick={(e) => {
               e.stopPropagation();
@@ -158,7 +238,7 @@ const QuestionManager = () => {
             </Button>
           </CardTitle>
           <CardDescription>
-            Create a new quiz question with multiple choice options
+            {isEditing ? 'Edit existing quiz question' : 'Create a new quiz question with multiple choice options'}
           </CardDescription>
         </CardHeader>
         {isAddQuestionExpanded && (
@@ -206,23 +286,68 @@ const QuestionManager = () => {
             />
           </div>
 
-          <Button 
-            onClick={addQuestion} 
-            disabled={isLoading}
-            className="w-full bg-blue-600 hover:bg-blue-700"
-          >
-            {isLoading ? (
-              <div className="flex items-center space-x-2">
-                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                <span>Adding...</span>
-              </div>
-            ) : (
-              <div className="flex items-center space-x-2">
-                <Plus className="w-4 h-4" />
-                <span>Add Question</span>
-              </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="difficulty" className="text-sm font-medium">
+                Difficulty Level
+              </Label>
+              <select
+                id="difficulty"
+                value={difficulty}
+                onChange={e => setDifficulty(e.target.value)}
+                className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                <option value="easy">Easy</option>
+                <option value="medium">Medium</option>
+                <option value="hard">Hard</option>
+                <option value="expert">Expert</option>
+              </select>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="points" className="text-sm font-medium">
+                Points Value
+              </Label>
+              <Input
+                id="points"
+                type="number"
+                min="1"
+                max="100"
+                placeholder="Points for correct answer"
+                value={points}
+                onChange={e => setPoints(parseInt(e.target.value) || 10)}
+              />
+            </div>
+          </div>
+
+          <div className="flex gap-2">
+            <Button 
+              onClick={isEditing ? updateQuestion : addQuestion} 
+              disabled={isLoading}
+              className="flex-1 bg-blue-600 hover:bg-blue-700"
+            >
+              {isLoading ? (
+                <div className="flex items-center space-x-2">
+                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                  <span>{isEditing ? 'Updating...' : 'Adding...'}</span>
+                </div>
+              ) : (
+                <div className="flex items-center space-x-2">
+                  {isEditing ? <Save className="w-4 h-4" /> : <Plus className="w-4 h-4" />}
+                  <span>{isEditing ? 'Save Changes' : 'Add Question'}</span>
+                </div>
+              )}
+            </Button>
+            {isEditing && (
+              <Button 
+                onClick={cancelEdit} 
+                variant="outline"
+                className="flex-1"
+              >
+                Cancel
+              </Button>
             )}
-          </Button>
+          </div>
         </CardContent>
         )}
       </Card>
@@ -246,10 +371,10 @@ const QuestionManager = () => {
             <Input
               id="timer"
               type="number"
-              min="10"
+              min="5"
               max="300"
               value={timer}
-              onChange={e => setTimer(parseInt(e.target.value) || 30)}
+              onChange={e => setTimer(parseInt(e.target.value) || 5)}
               className="w-24"
             />
             <span className="text-sm text-gray-600">seconds</span>
@@ -274,6 +399,19 @@ const QuestionManager = () => {
               <h4 className="font-medium text-gray-800 mb-2">
                 Question #{currentQuestion.id}: {currentQuestion.question}
               </h4>
+              <div className="flex items-center space-x-3 mb-2">
+                <Badge variant="secondary" className={`
+                  ${currentQuestion.difficulty?.toLowerCase() === 'easy' ? 'bg-green-100 text-green-800' : ''}
+                  ${currentQuestion.difficulty?.toLowerCase() === 'medium' ? 'bg-blue-100 text-blue-800' : ''}
+                  ${currentQuestion.difficulty?.toLowerCase() === 'hard' ? 'bg-red-100 text-red-800' : ''}
+                  ${!currentQuestion.difficulty || currentQuestion.difficulty?.toLowerCase() === 'expert' ? 'bg-purple-100 text-purple-800' : ''}
+                `}>
+                  {currentQuestion.difficulty || 'medium'}
+                </Badge>
+                <Badge variant="secondary" className="bg-purple-100 text-purple-800">
+                  {currentQuestion.points || 10} points
+                </Badge>
+              </div>
               <p className="text-sm text-gray-600">
                 Correct Answer: <span className="font-semibold text-green-600">{currentQuestion.answer}</span>
               </p>
@@ -281,7 +419,7 @@ const QuestionManager = () => {
             
             <div className="flex flex-wrap gap-3">
               <Button
-                onClick={revealAnswer}
+                onClick={() => revealAnswer()}
                 className="bg-blue-600 hover:bg-blue-700"
               >
                 <Eye className="w-4 h-4 mr-2" />
@@ -334,6 +472,19 @@ const QuestionManager = () => {
                             {q.question}
                           </h4>
                         </div>
+                        <div className="flex items-center space-x-3 text-xs">
+                          <Badge variant="secondary" className={`
+                            ${q.difficulty?.toLowerCase() === 'easy' ? 'bg-green-100 text-green-800 hover:bg-green-200' : ''}
+                            ${q.difficulty?.toLowerCase() === 'medium' ? 'bg-blue-100 text-blue-800 hover:bg-blue-200' : ''}
+                            ${q.difficulty?.toLowerCase() === 'hard' ? 'bg-red-100 text-red-800 hover:bg-red-200' : ''}
+                            ${!q.difficulty || q.difficulty?.toLowerCase() === 'expert' ? 'bg-purple-100 text-purple-800 hover:bg-purple-200' : ''}
+                          `}>
+                            {q.difficulty || 'medium'}
+                          </Badge>
+                          <Badge variant="secondary" className="bg-purple-100 text-purple-800 hover:bg-purple-200">
+                            {q.points || 10} points
+                          </Badge>
+                        </div>
                         
                         <div className="grid grid-cols-2 gap-2 text-sm text-gray-600">
                           {q.options.map((option, optIndex) => (
@@ -352,12 +503,36 @@ const QuestionManager = () => {
                       
                       <div className="flex flex-col space-y-2">
                         <Button
+                          onClick={() => showQuestion(q)}
+                          size="sm"
+                          className="bg-blue-600 hover:bg-blue-700"
+                        >
+                          <Eye className="w-4 h-4 mr-1" />
+                          Show
+                        </Button>
+                        <Button
                           onClick={() => startQuestion(q)}
                           size="sm"
                           className="bg-green-600 hover:bg-green-700"
                         >
                           <Play className="w-4 h-4 mr-1" />
-                          Start
+                          Start Timer
+                        </Button>
+                        <Button
+                          onClick={() => revealAnswer(q)}
+                          size="sm"
+                          className="bg-amber-600 hover:bg-amber-700"
+                        >
+                          <CheckCircle className="w-4 h-4 mr-1" />
+                          Show Answer
+                        </Button>
+                        <Button
+                          onClick={() => startEditQuestion(q)}
+                          size="sm"
+                          variant="outline"
+                          className="border-blue-500 text-blue-500 hover:bg-blue-50"
+                        >
+                          <Edit className="w-4 h-4" />
                         </Button>
                         <Button
                           onClick={() => deleteQuestion(q.id)}

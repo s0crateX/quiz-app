@@ -1,22 +1,13 @@
-{"questionId":1,"player":"Ryan","answer":"Yellow","correct":true,"timestamp":"2025-07-21T17:30:52.863Z"}
-{"questionId":1,"player":"Davez","answer":"Red","correct":false,"timestamp":"2025-07-21T17:30:54.029Z"}
-{"questionId":2,"player":"Ryan","answer":"London","correct":false,"timestamp":"2025-07-21T17:31:28.655Z"}
-{"questionId":2,"player":"Davez","answer":"Paris","correct":true,"timestamp":"2025-07-21T17:31:29.834Z"}
-{"questionId":1,"player":"Ryan","answer":"Yellow","correct":true,"timestamp":"2025-07-21T17:32:31.165Z"}
-{"questionId":1,"player":"Davez","answer":"Yellow","correct":true,"timestamp":"2025-07-21T17:32:32.016Z"}
-{"questionId":2,"player":"Ryan","answer":"Paris","correct":true,"timestamp":"2025-07-21T17:33:01.987Z"}
-{"questionId":2,"player":"Davez","answer":"Berlin","correct":false,"timestamp":"2025-07-21T17:33:03.052Z"}
-{"questionId":2,"player":"Ryan","answer":"Paris","correct":true,"timestamp":"2025-07-21T17:33:50.626Z"}
-{"questionId":2,"player":"Davez","answer":"Paris","correct":true,"timestamp":"2025-07-21T17:33:52.371Z"}
-{"questionId":1,"player":"Ryan","answer":"Yellow","correct":true,"timestamp":"2025-07-21T17:34:34.542Z"}
-{"questionId":1,"player":"Davez","answer":"Yellow","correct":true,"timestamp":"2025-07-21T17:34:36.555Z"}
-{"questionId":1,"player":"Void","answer":"Yellow","correct":true,"timestamp":"2025-07-21T17:58:11.526Z"}
-{"questionId":1,"player":"Dave","answer":"Red","correct":false,"timestamp":"2025-07-21T18:07:39.732Z"}
-{"questionId":1,"player":"Void","answer":"Yellow","correct":true,"timestamp":"2025-07-21T18:07:42.934Z"}
-{"questionId":2,"player":"Dave","answer":"Paris","correct":true,"timestamp":"2025-07-21T18:08:43.380Z"}
-{"questionId":2,"player":"Void","answer":"Paris","correct":true,"timestamp":"2025-07-21T18:08:44.662Z"}
-{"questionId":1753113063765,"player":"Void","answer":"DFSFSD","correct":true,"timestamp":"2025-07-21T18:10:14.935Z"}
-{"questionId":1753113063765,"player":"Dave","answer":"DFSFSD","correct":true,"timestamp":"2025-07-21T18:10:17.991Z"}
-{"questionId":1,"player":"Void","answer":"Orange","correct":false,"timestamp":"2025-07-21T18:19:06.723Z"}
-{"questionId":1,"player":"Dave","answer":"Orange","correct":false,"timestamp":"2025-07-21T18:19:08.650Z"}
-{"questionId":1,"player":"Void","answer":"Yellow","correct":true,"timestamp":"2025-07-21T18:26:33.189Z"}
+{"questionId":1753154238626,"player":"Void","answer":"Carbohydrates","correct":true,"points":1,"difficulty":"easy","timestamp":"2025-07-22T16:25:47.118Z"}
+{"questionId":1753154238626,"player":"Zeke","answer":"Fats","correct":false,"points":0,"difficulty":"easy","timestamp":"2025-07-22T16:25:49.371Z"}
+{"questionId":1753154300056,"player":"Void","answer":"Rice","correct":true,"points":3,"difficulty":"medium","timestamp":"2025-07-22T16:26:42.641Z"}
+{"questionId":1753154300056,"player":"Zeke","answer":"Apple","correct":false,"points":0,"difficulty":"medium","timestamp":"2025-07-22T16:26:44.009Z"}
+{"questionId":1753156775090,"player":"Zeke","answer":"Sun-dried mushrooms","correct":true,"points":5,"difficulty":"hard","timestamp":"2025-07-22T16:27:35.659Z"}
+{"questionId":1753156775090,"player":"Void","answer":"Orange","correct":false,"points":0,"difficulty":"hard","timestamp":"2025-07-22T16:27:37.310Z"}
+{"questionId":1753157012058,"player":"Void","answer":"Coconut","correct":true,"points":3,"difficulty":"medium","timestamp":"2025-07-22T16:28:51.647Z"}
+{"questionId":1753157058183,"player":"Void","answer":"Onion","correct":true,"points":1,"difficulty":"easy","timestamp":"2025-07-22T16:29:25.400Z"}
+{"questionId":1753157058183,"player":"Void","answer":"Onion","correct":true,"points":1,"difficulty":"easy","timestamp":"2025-07-22T16:29:56.182Z"}
+{"questionId":1753157058183,"player":"Void","answer":"Onion","correct":true,"points":1,"difficulty":"easy","timestamp":"2025-07-22T16:31:16.968Z"}
+{"questionId":1753157058183,"player":"Zeke","answer":"Tomato","correct":false,"points":0,"difficulty":"easy","timestamp":"2025-07-22T16:31:20.965Z"}
+{"questionId":1753157102210,"player":"Void","answer":"Vitamin C","correct":true,"points":3,"difficulty":"medium","timestamp":"2025-07-22T16:31:50.972Z"}
+{"questionId":1753157102210,"player":"Zeke","answer":"Vitamin C","correct":true,"points":3,"difficulty":"medium","timestamp":"2025-07-22T16:31:51.757Z"}

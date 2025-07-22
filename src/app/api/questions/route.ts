@@ -21,7 +21,7 @@ export async function GET() {
 
 export async function POST(request: NextRequest) {
   try {
-    const { question, options, answer } = await request.json();
+    const { question, options, answer, difficulty, points } = await request.json();
     
     if (!question || !options || !answer) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
@@ -32,6 +32,8 @@ export async function POST(request: NextRequest) {
       question,
       options,
       answer,
+      difficulty: difficulty || 'medium',
+      points: points || 10,
     };
 
     // Ensure data directory exists
@@ -45,6 +47,47 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error('Error adding question:', error);
     return NextResponse.json({ error: 'Failed to add question' }, { status: 500 });
+  }
+}
+
+export async function PUT(request: NextRequest) {
+  try {
+    const { id, question, options, answer, difficulty, points } = await request.json();
+    
+    if (!id || !question || !options || !answer) {
+      return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
+    }
+
+    if (!fs.existsSync(questionsFile)) {
+      return NextResponse.json({ error: 'No questions found' }, { status: 404 });
+    }
+
+    const data = fs.readFileSync(questionsFile, 'utf8');
+    const questions = data.trim() ? data.trim().split('\n').map(line => JSON.parse(line)) : [];
+    
+    const questionIndex = questions.findIndex(q => q.id === id);
+    if (questionIndex === -1) {
+      return NextResponse.json({ error: 'Question not found' }, { status: 404 });
+    }
+
+    // Preserve existing difficulty and points if not provided
+    const existingQuestion = questions[questionIndex];
+    const updatedQuestion = {
+      id,
+      question,
+      options,
+      answer,
+      difficulty: difficulty || existingQuestion.difficulty || 'medium',
+      points: points || existingQuestion.points || 10,
+    };
+
+    questions[questionIndex] = updatedQuestion;
+    fs.writeFileSync(questionsFile, questions.map(q => JSON.stringify(q)).join('\n') + '\n');
+    
+    return NextResponse.json(updatedQuestion);
+  } catch (error) {
+    console.error('Error updating question:', error);
+    return NextResponse.json({ error: 'Failed to update question' }, { status: 500 });
   }
 }
 

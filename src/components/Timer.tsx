@@ -15,7 +15,8 @@ const Timer = () => {
     socket.on('broadcast-question', (question: Question, time: number) => {
       setTimer(time);
       setInitialTime(time);
-      setIsActive(true);
+      // Only set timer as active if time > 0
+      setIsActive(time > 0);
     });
 
     socket.on('question-ended', () => {
@@ -58,27 +59,27 @@ const Timer = () => {
 
   const getTimerColor = () => {
     if (timer === 0) return 'text-gray-500';
-    if (timer <= 10) return 'text-red-600';
-    if (timer <= 30) return 'text-orange-600';
+    if (timer <= 4) return 'text-red-600';
+    if (timer <= 10) return 'text-orange-600';
     return 'text-green-600';
   };
 
   const getProgressColor = () => {
     if (timer === 0) return 'bg-gray-400';
-    if (timer <= 10) return 'bg-red-500';
-    if (timer <= 30) return 'bg-orange-500';
+    if (timer <= 4) return 'bg-red-500';
+    if (timer <= 10) return 'bg-orange-500';
     return 'bg-green-500';
   };
 
   const getBadgeVariant = () => {
     if (timer === 0) return 'secondary';
-    if (timer <= 10) return 'destructive';
+    if (timer <= 4) return 'destructive';
     return 'default';
   };
 
   const getIcon = () => {
     if (timer === 0 && !isActive) return <CheckCircle className="w-5 h-5" />;
-    if (timer <= 10 && timer > 0) return <AlertTriangle className="w-5 h-5" />;
+    if (timer <= 4 && timer > 0) return <AlertTriangle className="w-5 h-5" />;
     return <Clock className="w-5 h-5" />;
   };
 
@@ -90,7 +91,7 @@ const Timer = () => {
 
   return (
     <Card className={`transition-all duration-300 ${
-      timer <= 10 && timer > 0 ? 'ring-2 ring-red-400 shadow-lg' : 'shadow-md'
+      timer <= 4 && timer > 0 ? 'ring-2 ring-red-400 shadow-lg' : 'shadow-md'
     }`}>
       <CardContent className="pt-4">
         <div className="flex items-center justify-between mb-3">
@@ -124,10 +125,10 @@ const Timer = () => {
           </div>
         )}
 
-        {timer <= 10 && timer > 0 && (
+        {timer <= 4 && timer > 0 && (
           <div className="mt-3 text-center">
             <span className="text-sm text-red-600 font-medium animate-pulse">
-              ⚠️ Hurry up! Time is running out!
+              ⚠️ Hurry up! Only seconds left!
             </span>
           </div>
         )}

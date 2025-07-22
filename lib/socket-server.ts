@@ -32,6 +32,9 @@ const processAndSaveAnswers = async (question: Question, correctAnswer: string) 
       fs.mkdirSync(dataDir, { recursive: true });
     }
 
+    // Get points based on difficulty
+    const pointsValue = question.points || 10; // Default to 10 if not specified
+
     // Process each submitted answer
     for (const [playerName, submittedAnswer] of currentQuestionAnswers) {
       const isCorrect = submittedAnswer.answer === correctAnswer;
@@ -45,8 +48,12 @@ const processAndSaveAnswers = async (question: Question, correctAnswer: string) 
         player: playerName,
         answer: submittedAnswer.answer,
         correct: isCorrect,
+        points: isCorrect ? pointsValue : 0,
+        difficulty: question.difficulty || 'medium',
         timestamp: new Date().toISOString()
       };
+
+      console.log('Saving answer record with points:', answerRecord);
 
       // Append to answers file
       fs.appendFileSync(answersFile, JSON.stringify(answerRecord) + '\n');
@@ -57,10 +64,12 @@ const processAndSaveAnswers = async (question: Question, correctAnswer: string) 
       const data = fs.readFileSync(answersFile, 'utf8');
       const allAnswers = data.trim() ? data.trim().split('\n').map(line => JSON.parse(line)) : [];
       
-      // Calculate scores
+      // Calculate scores based on points instead of just correct count
       allAnswers.forEach(answer => {
         if (answer.correct) {
-          scores[answer.player] = (scores[answer.player] || 0) + 1;
+          // Use points value if available, otherwise default to 1 point for backward compatibility
+          const pointsToAdd = answer.points !== undefined ? answer.points : 1;
+          scores[answer.player] = (scores[answer.player] || 0) + pointsToAdd;
         }
       });
     }

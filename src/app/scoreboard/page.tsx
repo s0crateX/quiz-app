@@ -40,7 +40,9 @@ const ScoreboardPage = () => {
         const scoresMap: { [key: string]: number } = {};
         answers.forEach(answer => {
           if (answer.correct) {
-            scoresMap[answer.player] = (scoresMap[answer.player] || 0) + 1;
+            // Use points value if available, otherwise default to 1 point for backward compatibility
+            const pointsToAdd = answer.points !== undefined ? answer.points : 1;
+            scoresMap[answer.player] = (scoresMap[answer.player] || 0) + pointsToAdd;
           }
         });
 
@@ -270,32 +272,7 @@ const ScoreboardPage = () => {
           </CardContent>
         </Card>
 
-        {/* Round Winners */}
-        {roundWinners.length > 0 && (
-          <Card className="bg-gradient-to-r from-purple-600 to-pink-600 text-white border-0 shadow-xl">
-            <CardHeader>
-              <CardTitle className="text-2xl font-bold flex items-center space-x-2">
-                <Award className="w-6 h-6" />
-                <span>Latest Round Winners</span>
-              </CardTitle>
-              <CardDescription className="text-purple-100">
-                Congratulations to our recent champions!
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="flex flex-wrap gap-2">
-                {roundWinners.map((winner, index) => (
-                  <Badge 
-                    key={index} 
-                    className="bg-white/20 text-white text-lg px-4 py-2 backdrop-blur-sm"
-                  >
-                    🏆 {winner}
-                  </Badge>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-        )}
+        {/* Round Winners section hidden as requested */}
       </div>
     </Layout>
   );
